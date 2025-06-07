@@ -1,4 +1,5 @@
 # Seg-and-Predict
+![image](https://github.com/user-attachments/assets/8210b52d-ab57-47d8-834d-949e725314ed)
 
 ## 项目说明
 图像分割与犯罪预测系统
