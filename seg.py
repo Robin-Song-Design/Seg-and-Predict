@@ -14,9 +14,9 @@ from gluoncv.utils.viz import get_color_pallete
 app = Flask(__name__)  
 CORS(app)  
 
-class ImageSegmentation:  
-    def __init__(self):  
-        # 使用 CPU 上下文  
+class ImageSegmentation:
+    def __init__(self):
+        # 使用 CPU 上下文
         self.ctx = mx.cpu(0)  
         try:  
             # 加载预训练模型  

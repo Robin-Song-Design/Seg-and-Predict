@@ -21,7 +21,10 @@ function CrimeRateEditor() {
             const [segmentedImage, setSegmentedImage] = React.useState(null);
             const fileInputRef = React.useRef(null);
 
-            // 初始化画布  
+            const preImageUrl = "/images/test.jpg";
+            const preSegmentedImageUrl = "/images/seg.png";
+
+            // 初始化画布
             const initializeCanvas = (width, height) => {
                 const canvas = canvasRef.current;  
                 if (!canvas) return;  
@@ -34,8 +37,8 @@ function CrimeRateEditor() {
                 const context = canvas.getContext('2d');
                 context.lineCap = 'round';  
                 context.strokeStyle = currentTool === 'brush' ? (selectedColor?.color || 'black') : 'white';
-                context.lineWidth = brushSize;  
-                contextRef.current = context;  
+                context.lineWidth = brushSize;
+                contextRef.current = context;
 
                 // 设置白色背景  
                 context.fillStyle = 'white';  
@@ -46,14 +49,14 @@ function CrimeRateEditor() {
             };  
 
             // 更新画布的CSS尺寸以保持宽高比  
-            const updateCanvasStyle = () => {  
-                const canvas = canvasRef.current;  
-                const container = containerRef.current;  
-                if (!canvas || !container) return;  
+            const updateCanvasStyle = () => {
+                const canvas = canvasRef.current;
+                const container = containerRef.current;
+                if (!canvas || !container) return;
 
-                const containerWidth = container.clientWidth;  
-                const containerHeight = container.clientHeight;  
-                const containerRatio = containerWidth / containerHeight;  
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                const containerRatio = containerWidth / containerHeight;
                 const imageRatio = canvas.width / canvas.height;  
 
                 let newWidth, newHeight;  
@@ -67,93 +70,47 @@ function CrimeRateEditor() {
 
                 canvas.style.width = `${newWidth}px`;  
                 canvas.style.height = `${newHeight}px`;  
-            };  
+            };
 
-            React.useEffect(() => {  
-                initializeCanvas(1000, 600);  
+            React.useEffect(() => {
+                initializeCanvas(1000, 600);
                 document.getElementById('loading').style.display = 'none';  
 
                 window.addEventListener('resize', updateCanvasStyle);  
                 return () => window.removeEventListener('resize', updateCanvasStyle);  
-            }, []);  
+            }, []); 
 
             // 处理图片上传
-            const handleImageUpload = (e) => {  
-                const file = e.target.files[0];  
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
                 
-                if (file) {  
+                if (file) {
                     const reader = new FileReader();  
                     reader.onloadend = () => {  
-                        setOriginalImage(reader.result); 
+                        setOriginalImage(reader.result);
                         // 重置分割图像  
                         setSegmentedImage(null); 
-                        setHasOriginalImage(true);   
-                    };  
-                    reader.readAsDataURL(file); 
-                }     
+                        setHasOriginalImage(true);
+                    };
+                    reader.readAsDataURL(file);
+                }
             };
             
-            //分割函数
-            const handleSegmentation = async () => {  
-                if (!originalImage) return;
-                
+            // 加载预存分割图像
+            const handleSegmentation = () => {  
                 setIsSegmenting(true);  
-                try {  
-                    
-                    console.log('发送的图像数据长度:', originalImage.length);  
-                    console.log('图像数据前缀:', originalImage.slice(0, 50));  
-                    
-                    const response = await fetch('http://127.0.0.1:5001/segment', {  
-                        method: 'POST',  
-                        headers: {  
-                            'Content-Type': 'application/json',  
-                        },  
-                        body: JSON.stringify({ image: originalImage })  
-                    });  
-
-                    // 检查响应状态  
-                    if (!response.ok) {  
-                        const errorText = await response.text();  
-                        console.error('Server Response Error:', {  
-                            status: response.status,  
-                            statusText: response.statusText,  
-                            errorText: errorText  
-                        });  
-                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);  
-                    }  
-                    
-                    const data = await response.json();  
-                    
-                    // 详细的错误处理  
-                    if (data.status !== 'success') {  
-                        console.error('Segmentation error:', data.message);  
-                        alert(`Segmentation failed: ${data.message}`);  
-                        return;  
-                    }  
-
-                    console.log('接收到的分割图像数据长度:', data.segmented_image.length);  
-                    console.log('分割图像数据前缀:', data.segmented_image.slice(0, 50));
-
-                    if (data.status === 'success') {  
-                        // 创建分割图像  
+                
+                setTimeout(() => {
+                    try {  
                         const segmentedImg = new Image();  
-                        segmentedImg.src = `data:image/png;base64,${data.segmented_image}`;  
+                        segmentedImg.src = preSegmentedImageUrl;  
+                        
                         segmentedImg.onload = () => {  
-                            // 可以在这里处理分割图像，例如显示或进一步处理 
-                            // 获取画布上下文  
                             initializeCanvas(segmentedImg.width, segmentedImg.height); 
                             
                             const canvas = canvasRef.current;  
                             const context = canvas.getContext('2d');  
-                
-                            // 清除画布  
-                            //context.clearRect(0, 0, canvas.width, canvas.height);  
-                
-                            // 调整画布尺寸以匹配分割图像  
-                            //canvas.width = segmentedImg.width;  
-                            //canvas.height = segmentedImg.height;  
-                
-                            // 绘制分割图像到画布  
+                    
                             context.drawImage(segmentedImg, 0, 0); 
                             
                             imageRef.current = {  
@@ -162,31 +119,28 @@ function CrimeRateEditor() {
                                 height: segmentedImg.height  
                             };  
                             setHasImage(true);  
+                            setSegmentedImage(preSegmentedImageUrl);  
                             
-                            // 设置分割图像状态  
-                            setSegmentedImage(canvas.toDataURL('image/png')); 
-
-                            setSegmentedImage(segmentedImg.src);  
-                            console.log('Segmentation complete', {  
+                            console.log('Pre-segmented image loaded', {  
                                 width: canvas.width,  
-                                height: canvas.height}
-                        )};  
-                    } else {  
-                        console.error('Segmentation failed:', data.message); 
-                        // 可以添加错误提示  
-                        alert('Segmentation failed: ' + data.message);   
-                    }  
-                } catch (error) {  
-                    console.error('Segmentation error details:', {  
-                        name: error.name,  
-                        message: error.message,  
-                        stack: error.stack  
-                    });  
-                    alert('分割过程发生错误：' + error.message);   
-                } finally {  
-                    setIsSegmenting(false);  
-                }  
-            };  
+                                height: canvas.height
+                            });
+                            
+                            setIsSegmenting(false);
+                        };
+                        
+                        segmentedImg.onerror = () => {
+                            console.error('Failed to load pre-segmented image');
+                            alert('Failed to load pre-segmented image');
+                            setIsSegmenting(false);
+                        };
+                    } catch (error) {  
+                        console.error('Error loading pre-segmented image:', error);  
+                        alert('Error loading pre-segmented image：' + error.message);   
+                        setIsSegmenting(false);
+                    }
+                }, 3000); 
+            }; 
 
             // 获取鼠标在画布上的实际坐标  
             const getMousePos = (e) => {  
@@ -217,22 +171,6 @@ function CrimeRateEditor() {
                         contextRef.current.moveTo(pos.x, pos.y);  
                     }  
                 },  
-                eraser: {  
-                    draw: (e) => {  
-                        if (!isDrawing) return;  
-                        const pos = getMousePos(e);  
-                        contextRef.current.clearRect(  
-                            pos.x - brushSize/2,  
-                            pos.y - brushSize/2,  
-                            brushSize,  
-                            brushSize  
-                        );  
-                    },  
-                    start: (e) => {  
-                        setIsDrawing(true);  
-                        tools.eraser.draw(e);  
-                    }  
-                }  
             };  
 
             const startDrawing = (e) => {  
@@ -266,7 +204,7 @@ function CrimeRateEditor() {
                     contextRef.current.strokeStyle = currentTool === 'brush' ? (selectedColor?.color || 'black') : 'white';  
                     contextRef.current.lineWidth = brushSize;  
                 }  
-            }, [currentTool, brushSize, selectedColor]);  
+            }, [brushSize, selectedColor]);  
 
             //计算像素
             const calculatePixelRatios = () => {  
@@ -315,7 +253,7 @@ function CrimeRateEditor() {
                 
                 try {  
                     setIsPredicting(true);  // 开始预测  
-                    setPredictionError(null); // 清除之前的错误  
+                    setPredictionError(null); // 清除之前的错误
                     
                     const canvas = canvasRef.current;  
                     const imageData = canvas.toDataURL('image/png'); 
@@ -333,7 +271,7 @@ function CrimeRateEditor() {
                         },  
                         body: JSON.stringify({  
                             features: rgbRatios 
-                        })  
+                        })
                     });  
                     
                     if (!response.ok) {  
@@ -352,7 +290,8 @@ function CrimeRateEditor() {
                     setIsPredicting(false);   
                 }  
             };  
-                // 修改结果显示部分  
+            
+            // 修改结果显示部分  
             const renderPredictionResult = () => {  
                 if (isPredicting) {  
                     return (  
@@ -362,7 +301,7 @@ function CrimeRateEditor() {
                             </div>  
                         </div>  
                     );  
-                }  
+                }
 
                 if (predictionError) {  
                     return (  
@@ -380,16 +319,16 @@ function CrimeRateEditor() {
                             <div className="p-3 bg-gray-100 rounded">  
                                 <h3 className="font-medium">Predict Result</h3>  
                                 <div className="text-2xl font-bold text-blue-600">  
-                                    {crimeRate.toFixed(4)}  
+                                    Crime Rate: {crimeRate.toFixed(4)}% 
                                 </div>  
-                            </div>  
+                            </div> 
                     
                             {predictionDetails?.feature_importance && (  
                                 <div className="p-3 bg-gray-100 rounded">  
                                     <h3 className="font-medium">Main Factors</h3>  
                                     <div className="text-sm space-y-1 mt-2">  
                                         {Object.entries(predictionDetails.feature_importance)  
-                                            .slice(0, 5) // 只显示前三个最重要的特征  
+                                            .slice(1, 5) // 只显示前N个最重要的特征  
                                             .map(([feature, importance]) => (  
                                                 <div key={feature} className="flex justify-between">  
                                                     <span>{feature}</span>  
@@ -406,50 +345,49 @@ function CrimeRateEditor() {
 
                 return null;  
             }; 
-            return (  
+            
+            return (
                 <div className="p-10 mx-auto max-w-6xl h-screen">  
                     <div className="flex-1 flex gap-8 h-full">  
-                        <div className="w-48 space-y-4">  
-                            <div className="space-y-2">  
-                                <h3 className="font-medium">Upload Image</h3>  
-                                <input  
-                                    type="file"  
-                                    accept="image/*"  
-                                    onChange={handleImageUpload}  
-                                    className="w-full text-sm"  
-                                />  
-                            </div>  
+                        <div className="w-40 space-y-6"> 
 
-                            {/* 分割按钮 */}  
-                            <button  
-                                onClick={handleSegmentation}  
-                                disabled={!hasoriginalImage || isSegmenting}  
-                                className={`mt-4 w-full py-2 rounded ${  
-                                    !hasoriginalImage || isSegmenting  
-                                        ? 'bg-gray-300 cursor-default'  
-                                        : 'bg-blue-500 text-white hover:bg-blue-600'  
+                            <a href="https://robinsong.top" target="_blank" rel="noopener noreferrer">
+                                <img
+                                    src="/images/logo.svg"
+                                    alt="Logo"
+                                    className="w-full h-auto cursor-pointer"/>
+                            </a>
+                            
+                            {/* 分割按钮 */}
+                            <button
+                                onClick={handleSegmentation}
+                                disabled={isSegmenting}
+                                className={`w-full py-2 rounded ${
+                                    isSegmenting
+                                        ? 'bg-gray-300 cursor-default'
+                                        : 'bg-blue-500 text-white hover:bg-blue-600'
                                 }`}  
-                            >  
-                                {isSegmenting ? 'Segmenting...' : 'Segment'}  
-                            </button>  
+                            >
+                                {isSegmenting ? 'Segmenting...' : 'Segment'}
+                            </button>
 
-                            <div className="space-y-2">  
-                                <h3 className="font-medium">Tool</h3>  
-                                <div className="flex gap-2">  
-                                    <button  
+                            {/* <div className="space-y-2">
+                                <h3 className="font-medium">Tool</h3>
+                                <div className="flex gap-2">
+                                    <button
                                         className={`px-3 py-1 rounded ${currentTool === 'brush' ? 'bg-cyan-400 text-white' : 'bg-gray-200'}`}  
-                                        onClick={() => setCurrentTool('brush')}  
-                                    >  
+                                        onClick={() => setCurrentTool('brush')}
+                                    >
                                         Brush  
-                                    </button>  
-                                    <button  
+                                    </button>
+                                    {/* <button  
                                         className={`px-3 py-1 rounded ${currentTool === 'eraser' ? 'bg-cyan-500 text-white' : 'bg-gray-200'}`}  
                                         onClick={() => setCurrentTool('eraser')}  
                                     >  
                                         Eraser 
-                                    </button>  
+                                    </button>}
                                 </div>  
-                            </div>  
+                            </div>   */}
 
                             <div className="space-y-2">  
                                 <h3 className="font-medium">Brush Size</h3>  
@@ -473,9 +411,9 @@ function CrimeRateEditor() {
                                 </div>
                             </div>
                             
-                            <div className="space-y-2">
+                            <div className="space-y-2 w-40">
                                 <h3 className="font-medium">Scene Elements</h3>
-                                <div className="px-1 py-2 grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                                <div className="flex px-1 py-2 grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                                     {Object.entries(CITYSCAPES_COLORS).map(([key, item]) => (
                                         <button
                                             key={key}
@@ -522,22 +460,19 @@ function CrimeRateEditor() {
                                 {isPredicting ? 'Predicting...' : 'Predict'}  
                             </button>  
 
-                            {/* 添加预测结果显示 */}  
-                            {renderPredictionResult()}  
+                            
                         </div>
 
-                        <div className="flex-1 flex flex-col w-full h-full">     
-                            {/* 新增：原始图像显示区域 */}  
+                        <div className="flex-1 flex flex-col w-80 h-full">     
+                            {/* 新增：原始图像显示区域 */}
                             
-                                <div className="mb-4 w-full h-[200px] border rounded-lg overflow-hidden">  
-                                    {hasoriginalImage && originalImage && (  
-                                    <img   
-                                        src={originalImage}   
-                                        alt="Original"   
-                                        className="w-full h-full object-contain"  
-                                    />  
-                                    )}
-                                </div>  
+                            <div className="mb-4 w-full h-[200px] border rounded-lg overflow-hidden">  
+                                <img   
+                                    src={preImageUrl}
+                                    alt="Test Image"
+                                    className="w-full h-full object-contain"  
+                                />  
+                            </div> 
                              
                             <div 
                                 ref={containerRef} 
@@ -556,17 +491,19 @@ function CrimeRateEditor() {
                                     onMouseUp={stopDrawing}
                                     onMouseLeave={stopDrawing}
                                 />
-                            </div> 
+                            </div>
+                            {/* 添加预测结果显示 */}  
+                            {renderPredictionResult()}  
                             
-                            <div className="mb-4 w-full h-[200px] border-4 rounded-lg overflow-hidden">  
-                                    {hasoriginalImage && originalImage && (  
-                                    <img   
-                                        src={originalImage}   
-                                        alt="Original"   
-                                        className="w-full h-full object-contain"  
-                                    />  
+                            {/* <div className="mb-4 w-full h-[200px] border-4 rounded-lg overflow-hidden">
+                                    {hasoriginalImage && originalImage && (
+                                    <img
+                                        src={originalImage}
+                                        alt="Original"
+                                        className="w-full h-full object-contain"
+                                    />
                                     )}
-                            </div>  
+                            </div>   */}
                         </div>
                     </div>
                 </div>
