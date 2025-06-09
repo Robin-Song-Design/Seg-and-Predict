@@ -262,12 +262,10 @@ function CrimeRateEditor() {
                     const rgbRatios = calculatePixelRatios();  
                     
                     // 发送预测请求到后端   
-                    const response = await fetch('http://127.0.0.1:5000/predict', {  
+                    const response = await fetch('/predict', {  
                         method: 'POST',  
                         headers: {  
-                            'Content-Type': 'application/json',  
-                            // 添加CORS头  
-                            'Access-Control-Allow-Origin': '*'  
+                            'Content-Type': 'application/json',
                         },  
                         body: JSON.stringify({  
                             features: rgbRatios 
@@ -398,7 +396,7 @@ function CrimeRateEditor() {
                                     min="1"  
                                     max="100"  
                                     className="w-full
-                                        appearance-none   
+                                        appearance-none 
                                         bg-pink-200   
                                         h-2   
                                         rounded-full   
